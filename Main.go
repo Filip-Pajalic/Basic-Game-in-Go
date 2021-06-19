@@ -1,19 +1,19 @@
 package main
 
 import (
-	//"bytes"
 	"fmt"
 	"image"
 	_ "image/png"
 	"log"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/yuin/gopher-lua"
 )
 
 const (
-	screenWidth  = 240
-	screenHeight = 240
+	screenWidth  = 512
+	screenHeight = 512
 	level = 1
 )
 
@@ -35,8 +35,8 @@ var size_h int = 0
 var genMap [][]int
 
 const (
-	tileSize = 16
-	tileXNum = 25
+	tileSize = 32
+	tileXNum = 16
 )
 
 var (
@@ -45,7 +45,6 @@ var (
 )
 
 func newLevel(x int , y int){	
-	//fmt.Println(x)
 	for i := 0; i < y+2; i++ {
 		m := []int{}
 		for j := 0; j < x+3; j++ {
@@ -63,23 +62,12 @@ func createLevel(L *lua.LState) int{
 	newLevel(size_w,size_h)
 	return 1
 
-	//for i := range genMap{
-		// for j := range genMap[i]{
-		// 	if genMap[i][j] == int32(TileTypeEnum.TileSolid){
-		// 		rect := sdl.Rect{int32(screenWidth*i), int32(screenHeight*j), screenHeight, screenWidth}
-		// 		surface.FillRect(&rect, 0xffff0000)
-		// 	} else{
-		// 		rect := sdl.Rect{int32(screenWidth*i), int32(screenHeight*j), screenHeight, screenWidth}
-		// 		surface.FillRect(&rect, 0x11ff88aa)
-		// 	}
-		// }
+	//parse tilemap?
 }
 
 func setTile(L *lua.LState) int{
 	y := L.ToInt(2)
-	//print("Y:"+ fmt.Sprint(y))
-	x := L.ToInt(1)
-	//println(", X:"+ fmt.Sprint(x))	
+	x := L.ToInt(1)	
 	switch tile := L.ToInt(3); tile {
 	case 0:
 		genMap[x][y] = int(TileTypeEnum.TileEmpty)
@@ -106,13 +94,16 @@ func init() {
 		}, lua.LNumber(level)); err!= nil {
 		panic(err)					
 	}
-	fmt.Println(genMap)
-
+	//fmt.Println(genMap)
+	//load images
 	var err error
-	ship_img, _, err := ebitenutil.NewImageFromFile("img/ship1.png")
-	ship_img2, _, err := ebitenutil.NewImageFromFile("img/ship2.png")
+	ship_img, _, err := ebitenutil.NewImageFromFile("img/dirt_light.png")
+	ship_img2, _, err2 := ebitenutil.NewImageFromFile("img/dirt_brown.png")
 	if err != nil {
 		log.Fatal(err)
+	}
+	if err != nil {
+		log.Fatal(err2)
 	}
 	tilesImage = (ship_img)
 	tilesImage2 = (ship_img2)
@@ -120,6 +111,7 @@ func init() {
 
 type Game struct {
 	layers [][]int
+	tilemap *tile_map
 }
 
 func (g *Game) Update() error {
@@ -127,30 +119,22 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-
-	const xNum = screenWidth / tileSize
-	//fmt.Printf(g.layers)
-	//for _, l := range g.layers {
-	//	for i, t := range l {
-	//		op := &ebiten.DrawImageOptions{}
-	//		op.GeoM.Translate(float64((i%xNum)*tileSize), float64((i/xNum)*tileSize))
-
-	//		sx := (t % tileXNum) * tileSize
-	//		sy := (t / tileXNum) * tileSize
-	//		screen.DrawImage(tilesImage.SubImage(image.Rect(sx, sy, sx+tileSize, sy+tileSize)).(*ebiten.Image), op)
-	//	}
-	//}
 		
+	for i, tile := range g.tilemap.gameMap.Layers[0].Tiles {
+		print((i))
+		print(tile.ID)
+		println()
+	}
+
 	for i := range g.layers{
 		for j := range g.layers[i]{
 			op := &ebiten.DrawImageOptions{}
-			op.GeoM.Translate(float64((i%xNum)*tileSize), float64((i/xNum)*tileSize))
-			//sx := (i % tileXNum) * tileSize
-			//sy := (i / tileXNum) * tileSize
+	
+			op.GeoM.Translate(float64(i*tileSize), float64(j*tileSize))
 			if g.layers[i][j] == int(TileTypeEnum.TileSolid){				
-				screen.DrawImage(tilesImage.SubImage(image.Rect(i*20, j*20, 20, 20)).(*ebiten.Image), op)
+				screen.DrawImage(tilesImage.SubImage(image.Rect(0, 0, 32, 32)).(*ebiten.Image), op)
 			} else{
-				screen.DrawImage(tilesImage2.SubImage(image.Rect(i*20, j*20, 20, 20)).(*ebiten.Image), op)
+				screen.DrawImage(tilesImage2.SubImage(image.Rect(0, 0, 32, 32)).(*ebiten.Image), op)
 			}
 		}
 	}
@@ -163,8 +147,10 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 }
 
 func main() {
-	fmt.Println(genMap)
-	g := &Game{ layers: genMap}
+	gameMap := getMap()
+	//gameMap.append(1)
+	//fmt.Print(gameMap.gameMap.Layers[0].Tiles)
+	g := &Game{ tilemap: gameMap}
 	ebiten.SetWindowSize(screenWidth*2, screenHeight*2)
 	ebiten.SetWindowTitle("2XD2")
 	if err := ebiten.RunGame(g); err != nil {
