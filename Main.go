@@ -34,11 +34,6 @@ var size_w int = 0
 var size_h int = 0
 var genMap [][]int
 
-const (
-	tileSize = 32
-	tileXNum = 16
-)
-
 var (
 	tilesImage *ebiten.Image
 	tilesImage2 *ebiten.Image
@@ -61,8 +56,6 @@ func createLevel(L *lua.LState) int{
 
 	newLevel(size_w,size_h)
 	return 1
-
-	//parse tilemap?
 }
 
 func setTile(L *lua.LState) int{
@@ -94,8 +87,7 @@ func init() {
 		}, lua.LNumber(level)); err!= nil {
 		panic(err)					
 	}
-	//fmt.Println(genMap)
-	//load images
+
 	var err error
 	ship_img, _, err := ebitenutil.NewImageFromFile("img/dirt_light.png")
 	ship_img2, _, err2 := ebitenutil.NewImageFromFile("img/dirt_brown.png")
@@ -110,7 +102,6 @@ func init() {
 }
 
 type Game struct {
-	layers [][]int
 	tilemap *tile_map
 }
 
@@ -119,26 +110,18 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-		
-	for i, tile := range g.tilemap.gameMap.Layers[0].Tiles {
-		print((i))
-		print(tile.ID)
-		println()
-	}
-
-	for i := range g.layers{
-		for j := range g.layers[i]{
+	for _ ,layer := range g.tilemap.gameMap.Layers {
+		for i, tile := range layer.Tiles {
+			posx,posy := g.tilemap.gameMap.Layers[0].GetTilePosition(i)
 			op := &ebiten.DrawImageOptions{}
-	
-			op.GeoM.Translate(float64(i*tileSize), float64(j*tileSize))
-			if g.layers[i][j] == int(TileTypeEnum.TileSolid){				
+			op.GeoM.Translate(float64(posx), float64(posy))
+			if tile.Tileset.Name == "dirt_brown"{//int(TileTypeEnum.TileSolid){				
 				screen.DrawImage(tilesImage.SubImage(image.Rect(0, 0, 32, 32)).(*ebiten.Image), op)
 			} else{
 				screen.DrawImage(tilesImage2.SubImage(image.Rect(0, 0, 32, 32)).(*ebiten.Image), op)
 			}
 		}
 	}
-
 	ebitenutil.DebugPrint(screen, fmt.Sprintf("FPS: %0.2f", ebiten.CurrentTPS()))
 }
 
@@ -148,8 +131,6 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 
 func main() {
 	gameMap := getMap()
-	//gameMap.append(1)
-	//fmt.Print(gameMap.gameMap.Layers[0].Tiles)
 	g := &Game{ tilemap: gameMap}
 	ebiten.SetWindowSize(screenWidth*2, screenHeight*2)
 	ebiten.SetWindowTitle("2XD2")
