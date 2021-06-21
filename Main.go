@@ -32,6 +32,7 @@ var TileSolid = 1
 var TileEmpty = 0
 var size_w int = 0
 var size_h int = 0
+var frameNum = 2
 var genMap [][]int
 
 var (
@@ -102,10 +103,15 @@ func init() {
 }
 
 type Game struct {
+	positionx int
+	positiony int
+	count int
 	tilemap *tile_map
+	sprite *Spriteloader
 }
 
 func (g *Game) Update() error {
+	g.count ++
 	return nil
 }
 
@@ -122,7 +128,26 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			}
 		}
 	}
+
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Translate(-float64(20)/2, -float64(20)/2)
+	op.GeoM.Translate(float64(g.positionx)/2,float64(g.positiony)/2)
+	i := (g.count /60 ) % frameNum
+	sx, sy := i*20, 0
+	screen.DrawImage(g.sprite.spriteTexture.SubImage(image.Rect(sx,sy,sx+20,sy+20)).(*ebiten.Image),op)
 	ebitenutil.DebugPrint(screen, fmt.Sprintf("FPS: %0.2f", ebiten.CurrentTPS()))
+	if ebiten.IsKeyPressed(ebiten.KeyArrowUp){
+		g.positiony--
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyArrowDown){
+		g.positiony++
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyArrowRight){
+		g.positionx++
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft){
+		g.positionx--
+	}
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -130,8 +155,9 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 }
 
 func main() {
+	sl := newSprite("ship1")
 	gameMap := getMap()
-	g := &Game{ tilemap: gameMap}
+	g := &Game{ tilemap: gameMap, sprite: sl}
 	ebiten.SetWindowSize(screenWidth*2, screenHeight*2)
 	ebiten.SetWindowTitle("2XD2")
 	if err := ebiten.RunGame(g); err != nil {
